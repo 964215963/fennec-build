@@ -200,6 +200,9 @@ sed -i \
 localize_maven
 popd
 
+# Patch the use of proprietary libraries
+patch -p1 --no-backup-if-mismatch --quiet < "$patches/android-components-liberate.patch"
+
 #
 # Application Services
 #

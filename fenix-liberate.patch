@@ -885,3 +885,86 @@ index 6e56ff141..3bfeabfcc 100644
      const val detektApi = "io.gitlab.arturbosch.detekt:detekt-api:${Versions.detekt}"
      const val detektTest = "io.gitlab.arturbosch.detekt:detekt-test:${Versions.detekt}"
      const val junitApi = "org.junit.jupiter:junit-jupiter-api:${Versions.junit}"
+From 362b23f711e634a915e3d8c3c2400f60ef843a2e Mon Sep 17 00:00:00 2001
+From: Nho Quy Dinh <nonononoki@gmail.com>
+Date: Wed, 17 Aug 2022 20:05:06 +0200
+Subject: [PATCH 1/1] Revert "Close #25091: Remove deprecated
+ TrustedWebActivityIntentProcessor"
+
+This reverts commit 6752a6ba223346b6ce59b229d4acdd5915f6d172.
+---
+ .../java/org/mozilla/fenix/components/Components.kt   |  2 ++
+ .../org/mozilla/fenix/components/IntentProcessors.kt  | 11 +++++++++++
+ .../org/mozilla/fenix/customtabs/CustomTabsService.kt |  1 +
+ 3 files changed, 14 insertions(+)
+
+diff --git a/app/src/main/java/org/mozilla/fenix/components/Components.kt b/app/src/main/java/org/mozilla/fenix/components/Components.kt
+index 854dc6fb9..b88cd6144 100644
+--- a/app/src/main/java/org/mozilla/fenix/components/Components.kt
++++ b/app/src/main/java/org/mozilla/fenix/components/Components.kt
+@@ -97,6 +97,8 @@ class Components(private val context: Context) {
+             useCases.tabsUseCases,
+             useCases.customTabsUseCases,
+             useCases.searchUseCases,
++            core.relationChecker,
++            core.customTabsStore,
+             core.webAppManifestStorage,
+             core.engine,
+         )
+diff --git a/app/src/main/java/org/mozilla/fenix/components/IntentProcessors.kt b/app/src/main/java/org/mozilla/fenix/components/IntentProcessors.kt
+index f7599871a..551c072f4 100644
+--- a/app/src/main/java/org/mozilla/fenix/components/IntentProcessors.kt
++++ b/app/src/main/java/org/mozilla/fenix/components/IntentProcessors.kt
+@@ -11,14 +11,17 @@ import android.content.Context
+ import mozilla.components.browser.state.store.BrowserStore
+ import mozilla.components.concept.engine.Engine
+ import mozilla.components.feature.customtabs.CustomTabIntentProcessor
++import mozilla.components.feature.customtabs.store.CustomTabsServiceStore
+ import mozilla.components.feature.intent.processing.TabIntentProcessor
+ import mozilla.components.feature.pwa.ManifestStorage
++import mozilla.components.feature.pwa.intent.TrustedWebActivityIntentProcessor
+ import mozilla.components.feature.pwa.intent.WebAppIntentProcessor
+ import mozilla.components.feature.search.SearchUseCases
+ import mozilla.components.feature.session.SessionUseCases
+ import mozilla.components.feature.tabs.CustomTabsUseCases
+ import mozilla.components.feature.tabs.TabsUseCases
+ import mozilla.components.feature.webnotifications.WebNotificationIntentProcessor
++import mozilla.components.service.digitalassetlinks.RelationChecker
+ import org.mozilla.fenix.customtabs.FennecWebAppIntentProcessor
+ import org.mozilla.fenix.home.intent.FennecBookmarkShortcutsIntentProcessor
+ import org.mozilla.fenix.intent.ExternalDeepLinkIntentProcessor
+@@ -35,6 +38,8 @@ class IntentProcessors(
+     private val tabsUseCases: TabsUseCases,
+     private val customTabsUseCases: CustomTabsUseCases,
+     private val searchUseCases: SearchUseCases,
++    private val relationChecker: RelationChecker,
++    private val customTabsStore: CustomTabsServiceStore,
+     private val manifestStorage: ManifestStorage,
+     private val engine: Engine,
+ ) {
+@@ -66,6 +71,12 @@ class IntentProcessors(
+ 
+     val externalAppIntentProcessors by lazyMonitored {
+         listOf(
++            TrustedWebActivityIntentProcessor(
++                addNewTabUseCase = customTabsUseCases.add,
++                packageManager = context.packageManager,
++                relationChecker = relationChecker,
++                store = customTabsStore
++            ),
+             WebAppIntentProcessor(store, customTabsUseCases.addWebApp, sessionUseCases.loadUrl, manifestStorage),
+             FennecWebAppIntentProcessor(context, customTabsUseCases, manifestStorage)
+         )
+diff --git a/app/src/main/java/org/mozilla/fenix/customtabs/CustomTabsService.kt b/app/src/main/java/org/mozilla/fenix/customtabs/CustomTabsService.kt
+index 1af73e9ac..9024d2dff 100644
+--- a/app/src/main/java/org/mozilla/fenix/customtabs/CustomTabsService.kt
++++ b/app/src/main/java/org/mozilla/fenix/customtabs/CustomTabsService.kt
+@@ -11,4 +11,5 @@ import org.mozilla.fenix.ext.components
+ class CustomTabsService : AbstractCustomTabsService() {
+     override val engine: Engine by lazy { components.core.engine }
+     override val customTabsServiceStore by lazy { components.core.customTabsStore }
++    override val relationChecker by lazy { components.core.relationChecker }
+ }
+-- 
+2.37.2
+
