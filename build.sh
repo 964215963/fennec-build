@@ -22,11 +22,14 @@ set -e
 # shellcheck source=paths.sh
 source "$(dirname "$0")/paths.sh"
 
+echo "$(date --iso-8601=seconds) begin">log
+
 # We publish the artifacts into a local Maven repository instead of using the
 # auto-publication workflow because the latter does not work for Gradle
 # plugins (Glean).
 
 # Set up Android SDK
+echo "$(date --iso-8601=seconds) android sdk">>log
 sdkmanager 'build-tools;31.0.0'
 sdkmanager 'build-tools;33.0.0'
 sdkmanager 'build-tools;33.0.1'
@@ -35,6 +38,7 @@ sdkmanager 'ndk;25.1.8937393' # for Glean
 sdkmanager 'ndk;25.2.9519653'
 
 # Set up Rust
+echo "$(date --iso-8601=seconds) rust">>log
 "$rustup"/rustup-init.sh -y
 # shellcheck disable=SC1090,SC1091
 source "$HOME/.cargo/env"
@@ -45,6 +49,7 @@ rustup target add aarch64-linux-android
 cargo install --force --vers 0.26.0 cbindgen
 
 # Build WASI SDK
+echo "$(date --iso-8601=seconds) wasi-sdk">>log
 pushd "$wasi"
 mkdir -p build/install/wasi
 touch build/compiler-rt.BUILT # fool the build system
@@ -56,6 +61,7 @@ make \
 popd
 
 # Build microG libraries
+echo "$(date --iso-8601=seconds) gmscore">>log
 pushd "$gmscore"
 gradle -x javaDocReleaseGeneration \
     :play-services-ads-identifier:publishToMavenLocal \
@@ -65,6 +71,7 @@ gradle -x javaDocReleaseGeneration \
     :play-services-tasks:publishToMavenLocal
 popd
 
+echo "$(date --iso-8601=seconds) mozilla-release">>log
 pushd "$mozilla_release"
 MOZ_CHROME_MULTILOCALE=$(< "$patches/locales")
 export MOZ_CHROME_MULTILOCALE
@@ -73,19 +80,23 @@ gradle publishWithGeckoBinariesReleasePublicationToMavenLocal
 gradle exoplayer2:publishReleasePublicationToMavenLocal
 popd
 
+echo "$(date --iso-8601=seconds) glean-as">>log
 pushd "$glean_as"
 export TARGET_CFLAGS=-DNDEBUG
 gradle publishToMavenLocal
 popd
 
+echo "$(date --iso-8601=seconds) glean">>log
 pushd "$glean"
 gradle publishToMavenLocal
 popd
 
+echo "$(date --iso-8601=seconds) android-components-as">>log
 pushd "$android_components_as"
 gradle publishToMavenLocal
 popd
 
+echo "$(date --iso-8601=seconds) application-services">>log
 pushd "$application_services"
 export SQLCIPHER_LIB_DIR="$application_services/libs/desktop/linux-x86-64/sqlcipher/lib"
 export SQLCIPHER_INCLUDE_DIR="$application_services/libs/desktop/linux-x86-64/sqlcipher/include"
@@ -95,10 +106,14 @@ export NSS_STATIC=1
 gradle publishToMavenLocal
 popd
 
+echo "$(date --iso-8601=seconds) android-components">>log
 pushd "$android_components"
 gradle publishToMavenLocal
 popd
 
+echo "$(date --iso-8601=seconds) fenix">>log
 pushd "$fenix"
 gradle assembleRelease
 popd
+
+echo "$(date --iso-8601=seconds) end">>log
