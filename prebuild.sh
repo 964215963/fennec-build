@@ -271,9 +271,6 @@ pref("media.gmp-manager.url.override", "data:text/plain,");
 
 // Disable openh264 if it is already downloaded
 pref("media.gmp-gmpopenh264.enabled", false);
-
-// Disable casting (Roku, Chromecast)
-pref("browser.casting.enabled", false);
 EOF
 
 popd
