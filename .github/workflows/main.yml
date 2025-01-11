@@ -1,0 +1,32 @@
+name: Build APK
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out the code
+      uses: actions/checkout@v2
+
+    - name: Set up JDK
+      uses: actions/setup-java@v2
+      with:
+        java-version: '11' # 或其他你需要的版本
+        distribution: 'adopt'
+
+    - name: Build with Gradle
+      run: ./gradlew assembleDebug # 或使用 assembleRelease 根据需要
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v2
+      with:
+        name: my-app-apk
+        path: app/build/outputs/apk/debug/app-debug.apk # 根据你的项目结构调整路径
